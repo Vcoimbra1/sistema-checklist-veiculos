@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Admin - Royal Motors</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* TEMA PRETO E DOURADO MANTIDO */
+        body { background-color: #121212; color: #ffffff; }
+        .text-muted { color: #b3b3b3 !important; }
+        .card { background-color: #1e1e1e; border: 1px solid #333; color: #fff; }
+        .table { color: #fff; }
+        .table-dark { background-color: #2a2a2a; }
+        th { color: #D4AF37 !important; }
+        
+        /* Centralizando a logo */
+        .logo-container { text-align: center; margin-bottom: 20px; }
+        .logo-img { max-height: 100px; object-fit: contain; }
+
+        /* Estilos para as fotos dentro do modal */
+        .img-detalhe {
+            width: 100%;
+            height: 200px; /* Mantém todas as fotos do mesmo tamanho na grade */
+            object-fit: cover;
+            border-radius: 8px;
+            border: 1px solid #444;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .img-detalhe:hover { transform: scale(1.03); }
+        .label-detalhe { color: #D4AF37; font-weight: bold; font-size: 0.9rem; }
+        .valor-detalhe { color: #fff; font-size: 1.1rem; }
+    </style>
+</head>
+<body>
+
+<div class="container mt-4 mb-5">
+    
+    <div class="logo-container mt-3">
+        <img src="/static/logo.png" alt="Royal Motors" class="logo-img" onerror="this.style.display='none'">
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 style="color: #D4AF37;">Painel de Controle - Pós-venda</h2>
+        <a href="/" class="btn btn-outline-light">Novo Checklist</a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-dark align-middle">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Placa</th>
+                            <th>Veículo</th>
+                            <th>Data/Hora Entrada</th>
+                            <th>Responsável</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-corpo">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalDetalhes" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content card"> <div class="modal-header" style="border-bottom: 1px solid #333;">
+        <h5 class="modal-title" style="color: #D4AF37;">Inspeção Completa - ID <span id="mdl-id"></span></h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body bg-dark text-white">
+        
+        <h6 class="border-bottom pb-2 mb-3" style="color: #D4AF37;">Veículo</h6>
+        <div class="row mb-4">
+            <div class="col-4"><span class="label-detalhe">Placa:</span><br><span id="mdl-placa" class="valor-detalhe text-uppercase fw-bold"></span></div>
+            <div class="col-4"><span class="label-detalhe">Modelo:</span><br><span id="mdl-veiculo" class="valor-detalhe"></span></div>
+            <div class="col-4"><span class="label-detalhe">Ano/Cor:</span><br><span id="mdl-anocor" class="valor-detalhe"></span></div>
+        </div>
+
+        <h6 class="border-bottom pb-2 mb-3" style="color: #D4AF37;">Estado de Conservação</h6>
+        <div class="row mb-3">
+            <div class="col-6 mb-2"><span class="label-detalhe">Limpeza Externa:</span> <span id="mdl-limp-ext" class="valor-detalhe"></span></div>
+            <div class="col-6 mb-2"><span class="label-detalhe">Limpeza Interna:</span> <span id="mdl-limp-int" class="valor-detalhe"></span></div>
+            <div class="col-6 mb-2"><span class="label-detalhe">Pneus:</span> <span id="mdl-pneus" class="valor-detalhe"></span></div>
+            <div class="col-6 mb-2"><span class="label-detalhe">Estepe:</span> <span id="mdl-estepe" class="valor-detalhe"></span></div>
+        </div>
+        
+        <div class="mb-4">
+            <span class="label-detalhe">Observações:</span><br>
+            <p id="mdl-obs" class="valor-detalhe text-white-50 mt-1"></p>
+        </div>
+
+        <h6 class="border-bottom pb-2 mb-3" style="color: #D4AF37;">Fotos da Inspeção</h6>
+        <div class="row g-3" id="mdl-fotos-container">
+            </div>
+
+      </div>
+      <div class="modal-footer" style="border-top: 1px solid #333;">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // Configuração do servidor
+    const API_BASE_URL = ''; 
+    
+    // Objeto do Modal do Bootstrap para controle via JS
+    const modalDetalhesObj = new bootstrap.Modal(document.getElementById('modalDetalhes'));
+
+    // --- FUNÇÃO PRINCIPAL: Carregar a tabela ---
+    async function carregarChecklists() {
+        try {
+            const resposta = await fetch(`${API_BASE_URL}/api/checklists-completos/`);
+            const checklists = await resposta.json();
+            
+            const tbody = document.getElementById('tabela-corpo');
+            tbody.innerHTML = ''; 
+
+            checklists.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>#${item.checklist_id}</td>
+                    <td class="fw-bold text-uppercase">${item.placa}</td>
+                    <td>${item.marca} ${item.modelo}</td>
+                    <td>${item.data_entrada}</td>
+                    <td>${item.responsavel}</td>
+                    <td>
+                        <button class="btn btn-sm" style="background-color: #D4AF37; color: #000; font-weight: bold;" onclick="abrirModalDetalhes(${item.checklist_id})">
+                            Ver Detalhes
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        } catch (erro) {
+            console.error("Erro ao buscar dados:", erro);
+            alert("Erro ao carregar o painel administrativo.");
+        }
+    }
+
+    // --- FUNÇÃO DO BOTÃO: Abrir pop-up e buscar detalhes ---
+    async function abrirModalDetalhes(checklistId) {
+        // Limpa o conteúdo do modal anterior (mostra um loading básico)
+        document.getElementById('mdl-id').innerText = checklistId;
+        document.getElementById('mdl-fotos-container').innerHTML = '<div class="text-center text-muted">Carregando dados e fotos...</div>';
+        
+        // Abre o Modal vazio imediatamente para dar feedback ao usuário
+        modalDetalhesObj.show();
+
+        try {
+            // Busca os detalhes específicos desse ID na nossa NOVA ROTA Python
+            const resposta = await fetch(`${API_BASE_URL}/api/checklist/${checklistId}/detalhes/`);
+            if (!resposta.ok) throw new Error("Checklist não encontrado");
+            
+            const dados = await resposta.json();
+
+            // Preenche os campos de texto do Modal
+            document.getElementById('mdl-placa').innerText = dados.placa;
+            document.getElementById('mdl-veiculo').innerText = `${dados.marca} ${dados.modelo}`;
+            document.getElementById('mdl-anocor').innerText = `${dados.ano} / ${dados.cor}`;
+            document.getElementById('mdl-limp-ext').innerText = dados.estado_limpeza_externa;
+            document.getElementById('mdl-limp-int').innerText = dados.estado_limpeza_interna;
+            document.getElementById('mdl-pneus').innerText = dados.estado_pneus;
+            document.getElementById('mdl-estepe').innerText = dados.estado_estepe;
+            document.getElementById('mdl-obs').innerText = dados.observacoes || "Nenhuma observação cadastrada.";
+
+            // --- Lógica para processar as FOTOS ---
+            const containerFotos = document.getElementById('mdl-fotos-container');
+            containerFotos.innerHTML = ''; // Limpa o loading
+
+            if (dados.fotos && dados.fotos.length > 0) {
+                dados.fotos.forEach(foto => {
+                    // Cria uma coluna (col-6) para ter 2 fotos por linha
+                    const col = document.createElement('div');
+                    col.className = 'col-6 col-md-4 text-center';
+                    
+                    // O caminho que vem do banco é local. Usamos o '/uploads/' montado no Python.
+                    // O .split("static/")[1] é o truque para caso o arquivo esteja em local antigo, garanta o caminho novo.
+                    const caminhoFormatado = `/${foto.caminho_arquivo}`;
+
+                    col.innerHTML = `
+                        <img src="${caminhoFormatado}" class="img-detalhe" alt="${foto.tipo_foto}" onclick="window.open('${caminhoFormatado}', '_blank')">
+                        <span class="text-white font-weight-bold" style="font-size: 0.8rem;">${foto.tipo_foto}</span><br>
+                        <span class="text-muted" style="font-size: 0.7rem;">${foto.descricao || ''}</span>
+                    `;
+                    containerFotos.appendChild(col);
+                });
+            } else {
+                containerFotos.innerHTML = '<div class="col-12 text-center text-muted">Nenhuma foto anexada a este checklist.</div>';
+            }
+
+        } catch (erro) {
+            console.error("Erro ao carregar detalhes:", erro);
+            document.getElementById('mdl-fotos-container').innerHTML = '<div class="text-center text-danger">Erro ao carregar dados do servidor.</div>';
+        }
+    }
+
+    // Inicializa a tabela ao carregar a página
+    carregarChecklists();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,13 @@
+# Ambientes Virtuais
+venv/
+env/
+
+# Arquivos do Python
+__pycache__/
+*.pyc
+
+# Banco de Dados Local
+checklist.db
+
+# Uploads e Arquivos Estaticos locais
+uploads/
