@@ -31,4 +31,16 @@ A arquitetura foi pensada para rodar em uma rede local, utilizando tunelamento p
 
 1. Clone este repositório:
 ```bash
-git clone [https://github.com/SEU-USUARIO/NOME-DO-SEU-REPO.git](https://github.com/SEU-USUARIO/NOME-DO-SEU-REPO.git)
+git clone https://github.com/Vcoimbra1/sistema-checklist-veiculos.git
+
+2. Crie e ative o ambiente virtual:
+python -m venv venv
+# No Windows:
+venv\Scripts\activate
+
+3. Instale as dependências:
+pip install -r requirements.txt
+
+4. Inicie o servidor:
+uvicorn main:app --host 0.0.0.0 --port 8000
+Acesse http://localhost:8000/admin no navegador para abrir o Painel Administrativo.
